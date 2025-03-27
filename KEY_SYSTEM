@@ -1,0 +1,157 @@
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Load keys from external repository
+local success, keysData = pcall(function()
+    return game:HttpGet("https://raw.githubusercontent.com/ogbigbobbylongjohns/sl2/main/KEYS")
+end)
+
+local keys = {}
+
+if success then
+    keys = loadstring(keysData)() -- Load keys if request was successful
+else
+    print("Failed to fetch KEYS:", keysData)
+end
+
+-- Load game-specific scripts from external repository
+local success, gamesData = pcall(function()
+    return game:HttpGet("https://raw.githubusercontent.com/ogbigbobbylongjohns/sl2/main/GAMES")
+end)
+
+local gameScripts = {}
+
+if success then
+    gameScripts = loadstring(gamesData)() -- Load game script list
+else
+    print("Failed to fetch GAMES list:", gamesData)
+end
+
+-- GUI Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.CoreGui
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 300, 0, 200)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -100)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.BackgroundTransparency = 0.1
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
+
+-- Smooth Corners
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = Frame
+
+local TextBox = Instance.new("TextBox")
+TextBox.Size = UDim2.new(0.8, 0, 0.2, 0)
+TextBox.Position = UDim2.new(0.1, 0, 0.2, 0)
+TextBox.PlaceholderText = "Enter Key..."
+TextBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextBox.Parent = Frame
+
+local TextUICorner = Instance.new("UICorner")
+TextUICorner.CornerRadius = UDim.new(0, 8)
+TextUICorner.Parent = TextBox
+
+local GetKeyButton = Instance.new("TextButton")
+GetKeyButton.Size = UDim2.new(0.8, 0, 0.2, 0)
+GetKeyButton.Position = UDim2.new(0.1, 0, 0.5, 0)
+GetKeyButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+GetKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+GetKeyButton.Text = "Get Key"
+GetKeyButton.Parent = Frame
+
+local ButtonUICorner = Instance.new("UICorner")
+ButtonUICorner.CornerRadius = UDim.new(0, 8)
+ButtonUICorner.Parent = GetKeyButton
+
+local CheckKeyButton = Instance.new("TextButton")
+CheckKeyButton.Size = UDim2.new(0.8, 0, 0.2, 0)
+CheckKeyButton.Position = UDim2.new(0.1, 0, 0.75, 0)
+CheckKeyButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+CheckKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CheckKeyButton.Text = "Submit Key"
+CheckKeyButton.Parent = Frame
+
+local SubmitButtonUICorner = Instance.new("UICorner")
+SubmitButtonUICorner.CornerRadius = UDim.new(0, 8)
+SubmitButtonUICorner.Parent = CheckKeyButton
+
+-- Function to copy key link
+GetKeyButton.MouseButton1Click:Connect(function()
+    setclipboard("https://discord.gg/hNdqejhNkq")
+end)
+
+-- Auto-load key if exists
+local savedKey
+
+local success, keyFile = pcall(function()
+    return readfile("key.txt")
+end)
+
+if success then
+    savedKey = keyFile
+end
+
+if savedKey and table.find(keys, savedKey) then
+    TextBox.Text = "Key Valid (Auto-Loaded)"
+    
+    -- Get current game ID
+    local gameID = game.PlaceId
+    
+    -- Check if game ID has a script assigned
+    if gameScripts[gameID] then
+        local scriptURL = gameScripts[gameID]
+        print("Loading script for Game ID:", gameID)
+        
+        -- Fetch and execute the script
+        local scriptSuccess, scriptData = pcall(function()
+            return game:HttpGet(scriptURL)
+        end)
+
+        if scriptSuccess then
+            loadstring(scriptData)()
+        else
+            print("Failed to fetch script:", scriptData)
+        end
+    else
+        print("No script assigned for this game.")
+    end
+end
+
+-- Function to validate and save key
+CheckKeyButton.MouseButton1Click:Connect(function()
+    local enteredKey = TextBox.Text
+    if keys and table.find(keys, enteredKey) then
+        writefile("key.txt", enteredKey) -- Save key
+        TextBox.Text = "Key Valid!"
+
+        -- Get current game ID
+        local gameID = game.PlaceId
+        
+        -- Check if game ID has a script assigned
+        if gameScripts[gameID] then
+            local scriptURL = gameScripts[gameID]
+            print("Loading script for Game ID:", gameID)
+            
+            -- Fetch and execute the script
+            local scriptSuccess, scriptData = pcall(function()
+                return game:HttpGet(scriptURL)
+            end)
+
+            if scriptSuccess then
+                loadstring(scriptData)()
+            else
+                print("Failed to fetch script:", scriptData)
+            end
+        else
+            print("No script assigned for this game.")
+        end
+    else
+        TextBox.Text = "Invalid Key!"
+    end
+end)
